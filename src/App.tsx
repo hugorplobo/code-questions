@@ -1,9 +1,10 @@
 import Auth from "./routes/Auth";
 import Error from "./routes/Error";
 import Home from "./routes/Home";
+import Topic from "./routes/Topic";
 import { useColorMode } from "@chakra-ui/react";
-import { createClient } from "@supabase/supabase-js";
-import { createContext } from "react";
+import { supabaseContext, supabaseClient } from "./context/SupabaseContext";
+import { userContext } from "./context/UserContext";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 const router = createBrowserRouter([
@@ -14,16 +15,15 @@ const router = createBrowserRouter([
   },
   {
     path: "/app",
-    element: <Home />
+    element: <Home />,
+    children: [
+      {
+        path: ":topicName",
+        element: <Topic />,
+      }
+    ]
   }
 ]);
-
-const supabaseClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_ANON_KEY
-);
-
-export const supabaseContext = createContext(supabaseClient);
 
 function App() {
   const { colorMode, toggleColorMode } = useColorMode();
@@ -34,7 +34,9 @@ function App() {
 
   return (
     <supabaseContext.Provider value={supabaseClient}>
-      <RouterProvider router={router} />
+      <userContext.Provider value={{ id: "", userName: "" }}>
+        <RouterProvider router={router} />
+      </userContext.Provider>
     </supabaseContext.Provider>
   )
 }
