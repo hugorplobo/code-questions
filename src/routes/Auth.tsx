@@ -6,41 +6,67 @@ import {
   FormControl,
   Text,
   Input,
-  Button
+  Button,
+  Spinner
 } from "@chakra-ui/react";
 import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabaseContext } from "../App";
+import { supabaseContext } from "../context/SupabaseContext";
+import { userContext } from "../context/UserContext";
 
 export default function Auth() {
   const supabase = useContext(supabaseContext);
+  const user = useContext(userContext);
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const setUser = (id: string, userName: string) => {
+    user.id = id;
+    user.userName = userName;
+  }
 
   const handleSignUp = async () => {
-    const { error } = await supabase.auth.signUp({
+    setIsLoading(true);
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email, password
     });
 
-    if (error) {
-      console.error(error);
+    if (signUpError) {
+      console.error(signUpError);
+      setIsLoading(false);
       return;
     }
 
+    const { error } = await supabase
+      .from("usuario")
+      .insert({ id: data.user?.id, nome_usuario: data.user?.email });
+    
+    if (error) {
+      console.error(error);
+      setIsLoading(false);
+      return;
+    }
+
+    setUser(data.user?.id || "", data.user?.email || "");
     navigate("/app");
   }
 
   const handleSignIn = async () => {
-    const { error } = await supabase.auth.signInWithPassword({
+    setIsLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
       email, password
     });
 
     if (error) {
       console.error(error);
+      setIsLoading(false);
       return;
     }
 
+    setUser(data.user?.id || "", data.user?.email || "");
     navigate("/app");
   }
 
@@ -64,14 +90,22 @@ export default function Auth() {
 
           <VStack w="full">
             <FormControl>
-              <Button w="full" bg="blue.900" onClick={handleSignIn}>
-                Entrar
+              <Button w="full" bg="blue.900" onClick={handleSignIn} disabled={isLoading}>
+                { isLoading ? (
+                  <Spinner />
+                ) : (
+                  "Entrar"
+                )}
               </Button>
             </FormControl>
 
             <FormControl>
-              <Button w="full" bg="blue.500" onClick={handleSignUp}>
-                Registrar
+              <Button w="full" bg="blue.500" onClick={handleSignUp} disabled={isLoading}>
+                { isLoading ? (
+                  <Spinner />
+                ) : (
+                  "Registrar"
+                )}
               </Button>
             </FormControl>
           </VStack>
