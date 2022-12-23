@@ -10,10 +10,12 @@ import {
   Heading,
   Spinner,
   Text,
+  useDisclosure,
   VStack,
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 import { AddIcon } from "@chakra-ui/icons";
+import NewQuestionModal from "./NewQuestionModal";
 
 interface Props {
   userId: string;
@@ -32,7 +34,8 @@ export default function UserQuestions({ userId, userName }: Props) {
   const supabase = useContext(supabaseContext);
   const user = useContext(userContext);
   const { topicName } = useParams<"topicName">();
-  const { data, error, isLoading } = useSWR(`questoes-${userId}-${topicName}`, async () => {
+  const { onOpen, isOpen, onClose } = useDisclosure();
+  const { data, error, isLoading, mutate } = useSWR(`questoes-${userId}-${topicName}`, async () => {
     return supabase
       .from("usuario_questao_assunto")
       .select()
@@ -55,8 +58,15 @@ export default function UserQuestions({ userId, userName }: Props) {
     );
   }
 
+  const handleAdd = (name: string, font: string) => {
+    const newData = { ...data! };
+    newData.data?.push({ nome_questao: name, fonte: font });
+    mutate(newData);
+  }
+
   return (
     <VStack minW="250px">
+      <NewQuestionModal isOpen={isOpen} onClose={onClose} onAdd={handleAdd} />
       <Heading size="sm">{userName}</Heading>
       <VStack bg="gray.600" w="full" minH="80vh" py="4" px="2.5" borderRadius="md">
         { isLoading ? (
@@ -86,6 +96,7 @@ export default function UserQuestions({ userId, userName }: Props) {
               colorScheme="teal"
               w="full"
               leftIcon={<AddIcon />}
+              onClick={onOpen}
             >
               Adicionar
             </Button>
